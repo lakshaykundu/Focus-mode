@@ -9,6 +9,7 @@ import { StatusHeader, type FocusStatus } from '@/components/StatusHeader';
 import { StrictModeNotice } from '@/components/StrictModeNotice';
 import { WebsiteInput } from '@/components/WebsiteInput';
 import { WebsiteList } from '@/components/WebsiteList';
+import { YouTubeFilterCard } from '@/components/YouTubeFilterCard';
 import { YouTubePolicySelector } from '@/components/YouTubePolicySelector';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -278,6 +279,16 @@ export default function App() {
                   />
                 ))}
               </Card>
+              <YouTubeFilterCard
+                filter={settings.youtubeFilter}
+                inactive={settings.youtubePolicy !== 'clean'}
+                strictLocked={strictLocked}
+                pending={pending}
+                onChange={(patch, key) => void run({ type: 'UPDATE_SETTINGS', patch: { youtubeFilter: patch } }, key)}
+                onRemoveChannel={(channelId) =>
+                  void run({ type: 'REMOVE_ALLOWED_CHANNEL', channelId }, `channel:${channelId}`)
+                }
+              />
               <p className="text-[12px] text-fg-subtle">
                 YouTube Music (music.youtube.com) is controlled separately under Music.
               </p>

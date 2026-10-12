@@ -9,6 +9,8 @@ export interface FocusSession {
   strictMode: boolean;
   /** Planned length in minutes, or `null` for an indefinite session. */
   durationMinutes: number | null;
+  /** YouTube videos the user allowed for this session only, from the video overlay. */
+  allowedVideoIds: string[];
 }
 
 export interface FocusState {

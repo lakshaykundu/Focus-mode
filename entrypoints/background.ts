@@ -2,6 +2,7 @@ import { createFocusController } from '@/lib/focusController';
 import { handleFocusRequest, isFocusRequest } from '@/lib/messaging';
 import { createChromeDeps } from '@/lib/platform';
 import { SESSION_ALARM } from '@/lib/timer';
+import { CONTENT_SCRIPT_REQUESTS } from '@/types/messages';
 
 export default defineBackground(() => {
   const controller = createFocusController(createChromeDeps());
@@ -29,11 +30,16 @@ export default defineBackground(() => {
   });
 
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    // Only FocusGuard's own extension pages may drive state changes.
+    if (sender.id !== browser.runtime.id || !isFocusRequest(message)) return;
+    // Extension pages may send any request. The YouTube content script may only allow a video or
+    // channel from its overlay (and the controller still refuses that during Strict Mode).
     const fromExtensionPage =
-      sender.id === browser.runtime.id &&
-      (sender.url === undefined || sender.url.startsWith(browser.runtime.getURL('/')));
-    if (!fromExtensionPage || !isFocusRequest(message)) return;
+      sender.url === undefined || sender.url.startsWith(browser.runtime.getURL('/'));
+    const fromYouTube =
+      sender.tab !== undefined &&
+      /^https:\/\/(www|m)\.youtube\.com\//.test(sender.url ?? '') &&
+      (CONTENT_SCRIPT_REQUESTS as readonly string[]).includes(message.type);
+    if (!fromExtensionPage && !fromYouTube) return;
     void handleFocusRequest(controller, message).then(sendResponse);
     return true; // keep the channel open for the async response
   });

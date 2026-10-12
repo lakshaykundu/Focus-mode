@@ -29,6 +29,25 @@ export interface CleanYouTubeOptions {
   hideAutoplay: boolean;
 }
 
+export interface AllowedChannel {
+  /** YouTube channel ID (`UC…`), stable even if the channel is renamed. */
+  id: string;
+  name: string;
+}
+
+/**
+ * Category-based video filter for Clean YouTube. Decisions use the category the uploader chose
+ * on YouTube; this is metadata lookup, not content analysis.
+ */
+export interface YouTubeFilterSettings {
+  enabled: boolean;
+  /** IDs from `lib/youtubeCategories.ts`. */
+  allowedCategories: string[];
+  /** What to do when a video's category can't be read or isn't a known category. */
+  unknownPolicy: 'allow' | 'block';
+  allowedChannels: AllowedChannel[];
+}
+
 /** Minutes for a timed session, or `'indefinite'` for a session without an end time. */
 export type SessionDuration = number | 'indefinite';
 
@@ -45,5 +64,6 @@ export interface FocusSettings {
   sites: BlockedSite[];
   youtubePolicy: YouTubePolicy;
   cleanYouTube: CleanYouTubeOptions;
+  youtubeFilter: YouTubeFilterSettings;
   ui: UiPreferences;
 }

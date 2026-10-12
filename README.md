@@ -8,6 +8,10 @@ Built with WXT, React 19, TypeScript (strict), Tailwind CSS v4, Manifest V3 and
 `declarativeNetRequest`. Everything runs locally: no accounts, no servers, no analytics.
 
 <p>
+  <img src="docs/screenshots/youtube-blocked.png" width="760" alt="A comedy video covered by FocusGuard's overlay during a focus session">
+</p>
+
+<p>
   <img src="docs/screenshots/popup-idle.png" width="250" alt="Popup, ready to focus">
   <img src="docs/screenshots/popup-active.png" width="250" alt="Popup during an indefinite session">
   <img src="docs/screenshots/popup-strict.png" width="250" alt="Popup during a Strict Mode session">
@@ -33,6 +37,12 @@ Built with WXT, React 19, TypeScript (strict), Tailwind CSS v4, Manifest V3 and
   - *Block YouTube* blocks youtube.com outright.
   - *Clean YouTube* leaves it usable but hides Shorts, the home feed, related videos, comments
     (optional) and autoplay UI. YouTube Music is always controlled separately.
+- **YouTube video filter (Clean YouTube):** only videos in your allowed categories play. By
+  default that's Education, Science & Technology and Howto & Style. Any other video is paused and
+  covered by an overlay that explains why. Outside Strict Mode, the overlay offers **Allow this
+  video** (for the current session) and **Always allow this channel**. The filter uses the
+  category each uploader picked on YouTube (e.g. a React talk is *Education*, a comedy
+  compilation is *Comedy*). It's a metadata lookup, not AI, and the overlay says so.
 - **Strict Mode:** a strict timed session can't be ended from the popup, and sites can't be
   unblocked mid-session (adding more is fine). Settings has an emergency override: type a phrase,
   then hold a button for 5 seconds.
@@ -89,10 +99,18 @@ Load it in Chrome:
 └──────────────────────────────────────────────────────────────────────────┘
                 │ storage.onChanged
                 ▼
-┌──────── youtube.content.ts (www/m.youtube.com only) ────────┐
-│ injects one <style> while Clean YouTube is active            │
-└──────────────────────────────────────────────────────────────┘
+┌──── youtube.content/ (isolated world, www/m.youtube.com) ────┐      ┌─ youtube-bridge (MAIN world) ─┐
+│ Clean YouTube <style>; decides each video with              │ ◄─── │ reads the player's public      │
+│ youtubeFilter.decideVideo(); shows/hides the overlay        │ DOM  │ metadata: video ID, category,  │
+│ ALLOW_VIDEO / ALLOW_CHANNEL → background                    │event │ channel, title                 │
+└──────────────────────────────────────────────────────────────┘      └────────────────────────────────┘
 ```
+
+The YouTube player API (`movie_player.getPlayerResponse()`) is only reachable from the page's own
+JavaScript world, so a 2 kB main-world script reads it and passes the data to the isolated
+content script as a JSON string on a DOM event. That script validates every field. After
+in-page navigation, the player briefly still describes the previous video, so the bridge only
+publishes once the reported video ID matches the URL.
 
 **Design rules**
 
@@ -117,7 +135,8 @@ Load it in Chrome:
 ```
 entrypoints/
   background.ts           service worker: event listeners → focusController
-  youtube.content.ts      Clean YouTube content script
+  youtube.content/        Clean YouTube + video filter content script (index.ts, overlay.ts)
+  youtube-bridge.content.ts  MAIN-world reader for the player's video metadata
   popup/                  React popup (index.html, main.tsx, App.tsx)
   options/                React settings page
 components/               shared React UI (FocusTimer, DurationSelector, CategoryCard, …)
@@ -134,6 +153,9 @@ lib/
   statistics.ts           local-day aggregation, retention
   tabEnforcer.ts          open-tab enforcement + navigation guard
   youtubeCleaner.ts       Clean YouTube CSS builder
+  youtubeFilter.ts        video allow/block decision + Strict Mode loosening check
+  youtubeCategories.ts    YouTube's category list and name → ID mapping
+  youtubeBridge.ts        validation for metadata crossing from the page world
   messaging.ts            typed request router + client
   platform.ts             real Chrome API adapters
   mutex.ts                promise-chain lock
@@ -151,7 +173,7 @@ e2e/                      Playwright test that loads the built extension
 | `alarms` | Ends timed sessions on time even while the service worker is asleep. |
 | `tabs` | Reads open tabs' URLs once when a session starts, to reload tabs already on blocked sites. |
 | `webNavigation` | Detects back/forward-cache restores and in-page navigations to blocked sites, which make no network request for the block rules to stop. |
-| Content script on `www.youtube.com`, `m.youtube.com` | Applies Clean YouTube. It only adds a stylesheet and reads FocusGuard's own settings. |
+| Content scripts on `www.youtube.com`, `m.youtube.com` | Apply Clean YouTube and the video filter. They add a stylesheet and, for a blocked video, an overlay. A small main-world script reads only the current video's ID, category, channel and title from YouTube's player. Nothing leaves the page. |
 
 Chrome summarizes `tabs` and `webNavigation` as "Read your browsing history". FocusGuard only
 checks URLs against your blocklist in memory. It never stores or transmits them. It has no
@@ -163,7 +185,9 @@ checks URLs against your blocklist in memory. It never stores or transmits them.
   account.
 - No browsing history is recorded. Session records hold only start/end times, planned length and
   outcome.
-- The YouTube content script doesn't read video titles, comments or any page content.
+- The YouTube scripts read only the current video's ID, category, channel and title, use them to
+  decide locally, and keep none of it except channels you choose to always allow. They never read
+  comments or other page content, and never send anything anywhere.
 - No remote code, no `eval`, no API keys.
 
 ## Known limitations
@@ -178,6 +202,11 @@ checks URLs against your blocklist in memory. It never stores or transmits them.
   branded page would need `redirect` rules, which require host permissions for every site.
 - **Alarm timing:** Chrome may fire alarms up to ~30 s late. The popup ends the session the moment
   its countdown reaches zero, and stats record the planned end time either way.
+- **The video filter is only as good as YouTube's categories.** Uploaders choose them, so a coding
+  tutorial filed under *People & Blogs* or *Entertainment* is blocked until you allow the video or
+  channel, and a distraction filed under *Education* gets through. If YouTube stops exposing the
+  category, the "can't be read" setting decides (default: allow). Up to about 6 seconds may pass
+  before that happens.
 - **Clean YouTube relies on YouTube's markup.** Selectors are grouped and defensive, so a renamed
   element just stops being hidden and nothing breaks, but YouTube changes can reduce coverage until
   the selectors are updated. Autoplay is handled by hiding its UI and cancelling the "Up next"
@@ -192,7 +221,7 @@ checks URLs against your blocklist in memory. It never stores or transmits them.
 
 **Automated**
 
-- `npm test` runs 99 unit tests covering:
+- `npm test` runs 118 unit tests covering:
   - domain normalization and dedupe
   - rule generation and ID stability
   - category and YouTube behavior
@@ -202,6 +231,7 @@ checks URLs against your blocklist in memory. It never stores or transmits them.
   - local-timezone statistics
   - storage sanitization and migration
   - the Clean YouTube CSS builder
+  - video filter decisions, bridge input validation, and Strict Mode filter locking
 - `npm run test:e2e` loads `.output/chrome-mv3` into Playwright's Chromium. Hostnames under
   `*.test` resolve to a local server, so no external network is needed. It checks that:
   - a custom domain is blocked along with its subdomains, while lookalike and unrelated sites
@@ -212,6 +242,12 @@ checks URLs against your blocklist in memory. It never stores or transmits them.
   - going back to a blocked page is blocked
   - a strict countdown survives closing the popup
   - the emergency override works
+- `LIVE_YOUTUBE=1 npm run test:e2e` also runs an opt-in test against the real youtube.com. It
+  checks that:
+  - a Comedy video is covered and paused, and an Education video plays
+  - the filter follows in-page search → click-through navigation
+  - the overlay's **Allow this video** button works
+  - Strict Mode removes the overlay's buttons
 
 **Manual checklist** (load the unpacked build first):
 
@@ -226,16 +262,19 @@ checks URLs against your blocklist in memory. It never stores or transmits them.
       cleaned. music.youtube.com follows the Music toggle.
 - [ ] With Clean YouTube: no Shorts shelf or sidebar entry, no home feed, no related videos. A
       `/shorts/<id>` link opens in the normal player. Search and playback work.
+- [ ] With Clean YouTube: a tutorial (Education / Science & Technology) plays; a music video or
+      comedy clip is paused behind the overlay. **Allow this video** lets it play;
+      **Always allow** adds the channel under Settings → YouTube.
 - [ ] Strict Mode: no End button in the popup. Switching off a category is disabled. The emergency
       override in settings ends the session.
 - [ ] Unrelated sites (docs.python.org, developer.mozilla.org) are never affected.
 
 ## Future: content classification
 
-The long-term goal is content-aware filtering, for example allowing "Understanding React
-Reconciliation" on YouTube while blocking "Top 20 Funny Movie Scenes". The MVP doesn't do this
-and makes no claims about it. `types/classifier.ts` defines the contract a future implementation
-will fill:
+The video filter above handles the common case using YouTube's own categories. The next step is
+classifying videos whose category is too vague to judge, such as *People & Blogs* or
+*Entertainment*, from their title and description. That isn't built yet, and FocusGuard makes no
+claims about it. `types/classifier.ts` defines the contract a future implementation will fill:
 
 - **Input:** minimal public metadata (URL, title, description, platform category). Nothing else
   leaves the page.

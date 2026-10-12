@@ -1,14 +1,18 @@
 import type { FocusHistory, FocusSession, FocusState, SessionOutcome, SessionRecord } from '@/types/focus';
 import {
   SITE_CATEGORIES,
+  type AllowedChannel,
   type BlockedSite,
   type CleanYouTubeOptions,
   type FocusSettings,
   type SiteCategory,
+  type YouTubeFilterSettings,
 } from '@/types/settings';
 import { normalizeDomain } from './domainUtils';
 import { createDefaultSites, siteId } from './siteRegistry';
 import { validateDuration } from './timer';
+import { DEFAULT_ALLOWED_CATEGORIES, YOUTUBE_CATEGORIES, isYouTubeCategoryId } from './youtubeCategories';
+import { isChannelId, isVideoId } from './youtubeFilter';
 
 export const STORAGE_KEYS = {
   settings: 'fg:settings',
@@ -36,6 +40,15 @@ export const DEFAULT_CLEAN_YOUTUBE: CleanYouTubeOptions = {
   hideAutoplay: true,
 };
 
+export function createDefaultYouTubeFilter(): YouTubeFilterSettings {
+  return {
+    enabled: true,
+    allowedCategories: [...DEFAULT_ALLOWED_CATEGORIES],
+    unknownPolicy: 'allow',
+    allowedChannels: [],
+  };
+}
+
 export function createDefaultSettings(): FocusSettings {
   return {
     schemaVersion: 1,
@@ -48,6 +61,7 @@ export function createDefaultSettings(): FocusSettings {
     sites: createDefaultSites(),
     youtubePolicy: 'block',
     cleanYouTube: { ...DEFAULT_CLEAN_YOUTUBE },
+    youtubeFilter: createDefaultYouTubeFilter(),
     ui: { lastCustomMinutes: 30 },
   };
 }
@@ -118,6 +132,29 @@ function sanitizeSites(raw: unknown): BlockedSite[] {
   ];
 }
 
+function sanitizeYouTubeFilter(raw: unknown): YouTubeFilterSettings {
+  const defaults = createDefaultYouTubeFilter();
+  if (!isObj(raw)) return defaults;
+  const categories = Array.isArray(raw.allowedCategories)
+    ? // Keep YouTube's canonical order and drop unknown or duplicate IDs.
+      YOUTUBE_CATEGORIES.map((c) => c.id).filter((id) =>
+        (raw.allowedCategories as unknown[]).some((v) => isYouTubeCategoryId(v) && v === id),
+      )
+    : defaults.allowedCategories;
+  const channels: AllowedChannel[] = [];
+  for (const item of Array.isArray(raw.allowedChannels) ? raw.allowedChannels : []) {
+    if (!isObj(item) || !isChannelId(item.id) || channels.some((c) => c.id === item.id)) continue;
+    const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim().slice(0, 100) : item.id;
+    channels.push({ id: item.id, name });
+  }
+  return {
+    enabled: bool(raw.enabled, defaults.enabled),
+    allowedCategories: categories,
+    unknownPolicy: raw.unknownPolicy === 'block' || raw.unknownPolicy === 'allow' ? raw.unknownPolicy : defaults.unknownPolicy,
+    allowedChannels: channels,
+  };
+}
+
 export function sanitizeSettings(raw: unknown): FocusSettings {
   const defaults = createDefaultSettings();
   if (!isObj(raw)) return defaults;
@@ -149,6 +186,7 @@ export function sanitizeSettings(raw: unknown): FocusSettings {
       hideComments: bool(cleanRaw.hideComments, DEFAULT_CLEAN_YOUTUBE.hideComments),
       hideAutoplay: bool(cleanRaw.hideAutoplay, DEFAULT_CLEAN_YOUTUBE.hideAutoplay),
     },
+    youtubeFilter: sanitizeYouTubeFilter(raw.youtubeFilter),
     ui: {
       lastCustomMinutes:
         lastCustom.ok && typeof lastCustom.duration === 'number'
@@ -174,6 +212,9 @@ function sanitizeSession(raw: unknown): FocusSession | null {
     // Strict Mode only applies to timed sessions.
     strictMode: endsAt !== null && raw.strictMode === true,
     durationMinutes,
+    allowedVideoIds: Array.isArray(raw.allowedVideoIds)
+      ? [...new Set(raw.allowedVideoIds.filter(isVideoId))]
+      : [],
   };
 }
 

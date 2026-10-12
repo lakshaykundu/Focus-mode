@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { sendFocusRequest } from '@/lib/messaging';
+import { sendFocusRequest } from '@/lib/messageClient';
 import type { FocusRequest, FocusResponse } from '@/types/messages';
 
 /**

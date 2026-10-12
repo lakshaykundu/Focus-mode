@@ -18,7 +18,7 @@ const DETAILS: Record<YouTubePolicy, { title: string; body: string; icon: typeof
   },
   clean: {
     title: 'Clean YouTube',
-    body: 'YouTube stays usable for search and tutorials. Shorts, feeds and recommendations are hidden.',
+    body: 'YouTube stays usable for tutorials. Shorts, feeds and recommendations are hidden, and only videos in your allowed categories play.',
     icon: Sparkles,
   },
 };

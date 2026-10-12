@@ -328,3 +328,61 @@ describe('tab URL changes (bfcache / client-side navigation)', () => {
     expect(await controller.handleTabUrlChange(9, 'https://docs.python.org/')).toBe(false);
   });
 });
+
+describe('YouTube video filter', () => {
+  const VIDEO = 'irp_XBZz2R0';
+  const CHANNEL = 'UCowumzu6ojutpuj-wzqTIcA';
+
+  it('allows a video for the current session only', async () => {
+    const { controller, storage } = setup();
+    await expect(controller.allowVideo(VIDEO)).rejects.toThrow('No focus session');
+    await controller.startSession(25);
+    const { state } = await controller.allowVideo(VIDEO);
+    expect(state.activeSession?.allowedVideoIds).toEqual([VIDEO]);
+    await controller.allowVideo(VIDEO); // idempotent
+    expect((await loadAll(storage)).state.activeSession?.allowedVideoIds).toEqual([VIDEO]);
+
+    await controller.endSession();
+    const next = await controller.startSession(25);
+    expect(next.state.activeSession?.allowedVideoIds).toEqual([]);
+  });
+
+  it('rejects invalid video and channel IDs', async () => {
+    const { controller } = setup();
+    await controller.startSession(25);
+    await expect(controller.allowVideo('<img>')).rejects.toBeInstanceOf(FocusError);
+    await expect(controller.allowChannel('not-a-channel', 'x')).rejects.toBeInstanceOf(FocusError);
+  });
+
+  it('remembers always-allowed channels and can remove them', async () => {
+    const { controller } = setup();
+    let { settings } = await controller.allowChannel(CHANNEL, 'Code Sketched');
+    expect(settings.youtubeFilter.allowedChannels).toEqual([{ id: CHANNEL, name: 'Code Sketched' }]);
+    ({ settings } = await controller.allowChannel(CHANNEL, 'Code Sketched'));
+    expect(settings.youtubeFilter.allowedChannels).toHaveLength(1);
+    ({ settings } = await controller.removeAllowedChannel(CHANNEL));
+    expect(settings.youtubeFilter.allowedChannels).toEqual([]);
+  });
+
+  it('updates filter settings through UPDATE_SETTINGS', async () => {
+    const { controller } = setup();
+    const { settings } = await controller.updateSettings({ youtubeFilter: { allowedCategories: ['education', 'music', 'bogus'], unknownPolicy: 'block' } });
+    expect(settings.youtubeFilter.allowedCategories).toEqual(['education', 'music']);
+    expect(settings.youtubeFilter.unknownPolicy).toBe('block');
+    expect(settings.youtubeFilter.enabled).toBe(true);
+  });
+
+  it('Strict Mode blocks every way of loosening the filter, but allows tightening', async () => {
+    const { controller } = setup();
+    await controller.updateSettings({ strictMode: true, youtubePolicy: 'clean' });
+    await controller.startSession(45);
+
+    await expect(controller.allowVideo(VIDEO)).rejects.toThrow('Strict Mode');
+    await expect(controller.allowChannel(CHANNEL, 'Code Sketched')).rejects.toThrow('Strict Mode');
+    await expect(controller.updateSettings({ youtubeFilter: { enabled: false } })).rejects.toThrow('Strict Mode');
+    await expect(controller.updateSettings({ youtubeFilter: { allowedCategories: ['education', 'science', 'howto', 'music'] } })).rejects.toThrow('Strict Mode');
+
+    const { settings } = await controller.updateSettings({ youtubeFilter: { allowedCategories: ['education'], unknownPolicy: 'block' } });
+    expect(settings.youtubeFilter.allowedCategories).toEqual(['education']);
+  });
+});

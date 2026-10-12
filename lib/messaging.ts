@@ -1,4 +1,3 @@
-import { browser } from 'wxt/browser';
 import type { FocusRequest, FocusResponse, StateSnapshot } from '@/types/messages';
 import type { FocusController } from './focusController';
 import { FocusError } from './focusController';
@@ -15,6 +14,9 @@ const REQUEST_TYPES: ReadonlySet<FocusRequest['type']> = new Set([
   'ADD_CUSTOM_SITE',
   'REMOVE_SITE',
   'RESET_SETTINGS',
+  'ALLOW_VIDEO',
+  'ALLOW_CHANNEL',
+  'REMOVE_ALLOWED_CHANNEL',
 ]);
 
 export function isFocusRequest(value: unknown): value is FocusRequest {
@@ -64,18 +66,11 @@ function dispatch(controller: FocusController, request: FocusRequest): Promise<S
       return controller.removeSite(request.siteId);
     case 'RESET_SETTINGS':
       return controller.resetSettings();
-  }
-}
-
-/** Send a typed request to the background service worker (which wakes up if suspended). */
-export async function sendFocusRequest(request: FocusRequest): Promise<FocusResponse> {
-  try {
-    const response = (await browser.runtime.sendMessage(request)) as FocusResponse | undefined;
-    return response ?? { ok: false, error: 'No response from FocusGuard background worker.' };
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Could not reach FocusGuard background worker.',
-    };
+    case 'ALLOW_VIDEO':
+      return controller.allowVideo(request.videoId);
+    case 'ALLOW_CHANNEL':
+      return controller.allowChannel(request.channelId, request.name);
+    case 'REMOVE_ALLOWED_CHANNEL':
+      return controller.removeAllowedChannel(request.channelId);
   }
 }

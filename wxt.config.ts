@@ -12,7 +12,7 @@ export default defineConfig({
     name: 'FocusGuard',
     description:
       'Block distracting websites during focus sessions. Local-only, privacy-first.',
-    minimum_chrome_version: '110',
+    minimum_chrome_version: '111',
     // storage: settings, session state and statistics (local only).
     // declarativeNetRequest: block top-level navigation to distracting domains.
     // alarms: end timed sessions even while the service worker is suspended.

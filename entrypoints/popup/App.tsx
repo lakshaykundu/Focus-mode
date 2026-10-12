@@ -171,7 +171,9 @@ export default function App() {
                 {!youtubeActive
                   ? 'Off in your blocklist'
                   : settings.youtubePolicy === 'clean'
-                    ? 'Usable, distractions hidden'
+                    ? settings.youtubeFilter.enabled
+                      ? `Filtered · ${settings.youtubeFilter.allowedCategories.length} categories allowed`
+                      : 'Usable, distractions hidden'
                     : 'Blocked entirely'}
               </p>
             </div>

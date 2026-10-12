@@ -18,6 +18,7 @@ import {
 } from './storage';
 import { createNavigationGuard, enforceOpenTabs, type TabsApi } from './tabEnforcer';
 import { SESSION_ALARM, isExpired, validateDuration } from './timer';
+import { isChannelId, isFilterLoosened, isVideoId } from './youtubeFilter';
 
 /** The slice of `chrome.alarms` FocusGuard needs. */
 export interface AlarmsApi {
@@ -147,10 +148,17 @@ export function createFocusController(deps: FocusDeps) {
     if (data.state.activeSession) {
       const before = getBlockTargets(data.settings);
       const after = getBlockTargets(next);
-      if (isStrictLocked(data) && !coversAll(before, after)) {
-        throw new FocusError(
-          'Strict Mode is on: you can block more sites, but not unblock any until the session ends.',
-        );
+      if (isStrictLocked(data)) {
+        if (!coversAll(before, after)) {
+          throw new FocusError(
+            'Strict Mode is on: you can block more sites, but not unblock any until the session ends.',
+          );
+        }
+        if (data.settings.youtubePolicy === 'clean' && isFilterLoosened(data.settings.youtubeFilter, next.youtubeFilter)) {
+          throw new FocusError(
+            'Strict Mode is on: the YouTube filter can be tightened, but not loosened until the session ends.',
+          );
+        }
       }
       await reconcileRules(deps.dnr, after);
       await saveData(deps.storage, { settings: next });
@@ -188,6 +196,7 @@ export function createFocusController(deps: FocusDeps) {
           status: 'active',
           strictMode: timed && data.settings.strictMode,
           durationMinutes: timed ? (valid.duration as number) : null,
+          allowedVideoIds: [],
         };
 
         const targets = getBlockTargets(data.settings);
@@ -265,6 +274,7 @@ export function createFocusController(deps: FocusDeps) {
             ...settings,
             ...patch,
             cleanYouTube: { ...settings.cleanYouTube, ...patch.cleanYouTube },
+            youtubeFilter: { ...settings.youtubeFilter, ...patch.youtubeFilter },
             ui: { ...settings.ui, ...patch.ui },
           });
         }),
@@ -331,6 +341,52 @@ export function createFocusController(deps: FocusDeps) {
       ),
 
     resetSettings: () => exclusive(() => mutateSettings(() => createDefaultSettings())),
+
+    /** Let one YouTube video play for the rest of the current session (from the video overlay). */
+    allowVideo: (videoId: string) =>
+      exclusive(async () => {
+        if (!isVideoId(videoId)) throw new FocusError('Invalid video.');
+        const data = await settleExpired(await loadAll(deps.storage));
+        const session = data.state.activeSession;
+        if (!session) throw new FocusError('No focus session is running.');
+        if (isStrictLocked(data)) {
+          throw new FocusError('Strict Mode is on: videos can\'t be allowed until the session ends.');
+        }
+        if (session.allowedVideoIds.includes(videoId)) return snapshot(data);
+        const state = {
+          ...data.state,
+          activeSession: { ...session, allowedVideoIds: [...session.allowedVideoIds, videoId] },
+          lastUpdatedAt: now(),
+        };
+        await saveData(deps.storage, { state });
+        return snapshot({ ...data, state });
+      }),
+
+    allowChannel: (channelId: string, name: string) =>
+      exclusive(() =>
+        mutateSettings((settings) => {
+          if (!isChannelId(channelId)) throw new FocusError('Invalid channel.');
+          if (settings.youtubeFilter.allowedChannels.some((c) => c.id === channelId)) return settings;
+          return sanitizeSettings({
+            ...settings,
+            youtubeFilter: {
+              ...settings.youtubeFilter,
+              allowedChannels: [...settings.youtubeFilter.allowedChannels, { id: channelId, name }],
+            },
+          });
+        }),
+      ),
+
+    removeAllowedChannel: (channelId: string) =>
+      exclusive(() =>
+        mutateSettings((settings) => ({
+          ...settings,
+          youtubeFilter: {
+            ...settings.youtubeFilter,
+            allowedChannels: settings.youtubeFilter.allowedChannels.filter((c) => c.id !== channelId),
+          },
+        })),
+      ),
 
     /** Called for committed top-frame navigations. Read-only, so no mutex needed. */
     async handleTabUrlChange(tabId: number, url: string): Promise<boolean> {

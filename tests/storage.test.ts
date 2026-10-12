@@ -71,7 +71,7 @@ describe('sanitizeSettings', () => {
 
 describe('sanitizeState', () => {
   it('derives enabled from a valid session', () => {
-    const session = { id: 's', startedAt: 1000, endsAt: 61_000, status: 'active', strictMode: true, durationMinutes: 1 };
+    const session = { id: 's', startedAt: 1000, endsAt: 61_000, status: 'active', strictMode: true, durationMinutes: 1, allowedVideoIds: ['thsUZEzL8ts'] };
     expect(sanitizeState({ enabled: false, activeSession: session, lastUpdatedAt: 5 })).toEqual({
       enabled: true,
       activeSession: session,
@@ -128,5 +128,47 @@ describe('validateDuration', async () => {
     expect(validateDuration(10.5)).toMatchObject({ ok: false, error: 'Use whole minutes' });
     expect(validateDuration(0)).toMatchObject({ ok: false, error: 'Choose between 1 and 720 minutes' });
     expect(validateDuration(null)).toMatchObject({ ok: false });
+  });
+});
+
+describe('YouTube filter storage', () => {
+  it('older settings without a filter get the defaults', () => {
+    const settings = sanitizeSettings({ youtubePolicy: 'clean' });
+    expect(settings.youtubeFilter).toEqual({
+      enabled: true,
+      allowedCategories: ['education', 'science', 'howto'],
+      unknownPolicy: 'allow',
+      allowedChannels: [],
+    });
+  });
+
+  it('drops unknown categories and invalid or duplicate channels', () => {
+    const { youtubeFilter } = sanitizeSettings({
+      youtubeFilter: {
+        enabled: false,
+        allowedCategories: ['music', 'nope', 'education', 'music', 7],
+        unknownPolicy: 'sometimes',
+        allowedChannels: [
+          { id: 'UCowumzu6ojutpuj-wzqTIcA', name: '  Code Sketched ' },
+          { id: 'UCowumzu6ojutpuj-wzqTIcA', name: 'dupe' },
+          { id: 'javascript:alert(1)', name: 'bad' },
+          { id: 'UC1234567890abcdefXYZ', name: '' },
+        ],
+      },
+    });
+    expect(youtubeFilter.enabled).toBe(false);
+    expect(youtubeFilter.allowedCategories).toEqual(['education', 'music']); // canonical order
+    expect(youtubeFilter.unknownPolicy).toBe('allow');
+    expect(youtubeFilter.allowedChannels).toEqual([
+      { id: 'UCowumzu6ojutpuj-wzqTIcA', name: 'Code Sketched' },
+      { id: 'UC1234567890abcdefXYZ', name: 'UC1234567890abcdefXYZ' },
+    ]);
+  });
+
+  it('sessions saved before this feature get an empty allowed-video list', () => {
+    const state = sanitizeState({ activeSession: { id: 's', startedAt: 10, endsAt: 99_999 } });
+    expect(state.activeSession?.allowedVideoIds).toEqual([]);
+    const withBad = sanitizeState({ activeSession: { id: 's', startedAt: 10, endsAt: 99_999, allowedVideoIds: ['ok_video1', '<x>', 'ok_video1'] } });
+    expect(withBad.activeSession?.allowedVideoIds).toEqual(['ok_video1']);
   });
 });
