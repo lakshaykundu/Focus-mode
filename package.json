@@ -1,13 +1,14 @@
 {
   "name": "focusguard",
-  "description": "FocusGuard — a privacy-first focus mode Chrome extension that blocks distracting websites.",
+  "description": "FocusGuard \u2014 a privacy-first focus mode Chrome extension that blocks distracting websites.",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
     "zip": "wxt zip",
+    "store:assets": "wxt build && node scripts/store-assets.ts",
     "compile": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

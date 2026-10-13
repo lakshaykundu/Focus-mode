@@ -9,9 +9,11 @@ export default defineConfig({
     developmentIndicator: false,
   },
   manifest: {
-    name: 'FocusGuard',
+    // Store title; distinct from other "FocusGuard" listings. The UI itself says FocusGuard.
+    name: 'FocusGuard – Focus Mode & YouTube Study Filter',
+    short_name: 'FocusGuard',
     description:
-      'Block distracting websites during focus sessions. Local-only, privacy-first.',
+      'Block distracting sites during focus sessions and let only study videos play on YouTube. Local-only, no tracking.',
     minimum_chrome_version: '111',
     // storage: settings, session state and statistics (local only).
     // declarativeNetRequest: block top-level navigation to distracting domains.

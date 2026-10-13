@@ -80,7 +80,8 @@ Load it in Chrome:
 | --- | --- |
 | `npm run dev` | Launches Chrome with the extension and hot reload |
 | `npm run build` | Production build to `.output/chrome-mv3` |
-| `npm run zip` | Zips the build for the Chrome Web Store |
+| `npm run zip` | Zips the build for the Chrome Web Store (`.output/focusguard-<version>-chrome.zip`) |
+| `npm run store:assets` | Regenerates the store icon, screenshots and promo tiles in `store/images/` (needs network for the YouTube shots) |
 | `npm run compile` | Strict TypeScript check (`tsc --noEmit`) |
 | `npm test` | Vitest unit tests |
 | `npm run test:e2e` | Playwright test against real Chromium with the built extension (run `npm run build` and `npx playwright install chromium` first) |
@@ -184,6 +185,13 @@ e2e/                      Playwright test that loads the built extension
 Chrome summarizes `tabs` and `webNavigation` as "Read your browsing history". FocusGuard only
 checks URLs against your blocklist in memory. It never stores or transmits them. It has no
 `host_permissions` and doesn't fetch favicons (which would reveal your blocklist to third parties).
+
+## Publishing
+
+`store/listing.md` has every field the Chrome Web Store dashboard asks for: description,
+category, single-purpose statement, permission justifications, data-usage disclosures and the
+privacy policy URL ([PRIVACY.md](PRIVACY.md)). Upload `.output/focusguard-<version>-chrome.zip`
+from `npm run zip` along with the images in `store/images/`.
 
 ## Privacy
 
