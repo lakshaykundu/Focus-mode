@@ -27,6 +27,8 @@ export interface CleanYouTubeOptions {
   hideSidebar: boolean;
   hideComments: boolean;
   hideAutoplay: boolean;
+  /** Keep only Home in YouTube's left menu. */
+  hideGuide: boolean;
 }
 
 export interface AllowedChannel {

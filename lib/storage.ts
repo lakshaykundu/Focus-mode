@@ -38,6 +38,7 @@ export const DEFAULT_CLEAN_YOUTUBE: CleanYouTubeOptions = {
   hideSidebar: true,
   hideComments: false,
   hideAutoplay: true,
+  hideGuide: true,
 };
 
 export function createDefaultYouTubeFilter(): YouTubeFilterSettings {
@@ -185,6 +186,7 @@ export function sanitizeSettings(raw: unknown): FocusSettings {
       hideSidebar: bool(cleanRaw.hideSidebar, DEFAULT_CLEAN_YOUTUBE.hideSidebar),
       hideComments: bool(cleanRaw.hideComments, DEFAULT_CLEAN_YOUTUBE.hideComments),
       hideAutoplay: bool(cleanRaw.hideAutoplay, DEFAULT_CLEAN_YOUTUBE.hideAutoplay),
+      hideGuide: bool(cleanRaw.hideGuide, DEFAULT_CLEAN_YOUTUBE.hideGuide),
     },
     youtubeFilter: sanitizeYouTubeFilter(raw.youtubeFilter),
     ui: {

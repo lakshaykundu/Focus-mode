@@ -8,6 +8,10 @@ Built with WXT, React 19, TypeScript (strict), Tailwind CSS v4, Manifest V3 and
 `declarativeNetRequest`. Everything runs locally: no accounts, no servers, no analytics.
 
 <p>
+  <img src="docs/screenshots/youtube-home.png" width="760" alt="YouTube's home page during a focus session: the feed is replaced by a stick-figure doodle and the left menu shows only Home">
+</p>
+
+<p>
   <img src="docs/screenshots/youtube-blocked.png" width="760" alt="A comedy video covered by FocusGuard's overlay during a focus session">
 </p>
 
@@ -36,7 +40,9 @@ Built with WXT, React 19, TypeScript (strict), Tailwind CSS v4, Manifest V3 and
 - **YouTube policy:**
   - *Block YouTube* blocks youtube.com outright.
   - *Clean YouTube* leaves it usable but hides Shorts, the home feed, related videos, comments
-    (optional) and autoplay UI. YouTube Music is always controlled separately.
+    (optional) and autoplay UI, and trims the left menu to just Home. The home feed is replaced
+    by a hand-drawn "nope / yep" doodle with a daily quip. YouTube Music is always controlled
+    separately.
 - **YouTube video filter (Clean YouTube):** only videos in your allowed categories play. By
   default that's Education, Science & Technology and Howto & Style. Any other video is paused and
   covered by an overlay that explains why. Outside Strict Mode, the overlay offers **Allow this
@@ -260,7 +266,8 @@ checks URLs against your blocklist in memory. It never stores or transmits them.
 - [ ] Add `news.ycombinator.com` in settings → blocked during a session. Remove it → loads.
 - [ ] Switch YouTube between Block and Clean during a session → youtube.com is blocked / loads
       cleaned. music.youtube.com follows the Music toggle.
-- [ ] With Clean YouTube: no Shorts shelf or sidebar entry, no home feed, no related videos. A
+- [ ] With Clean YouTube: no Shorts shelf or sidebar entry, no related videos, and the left menu
+      shows only Home. The home page shows the centred doodle instead of a feed. A
       `/shorts/<id>` link opens in the normal player. Search and playback work.
 - [ ] With Clean YouTube: a tutorial (Education / Science & Technology) plays; a music video or
       comedy clip is paused behind the overlay. **Allow this video** lets it play;

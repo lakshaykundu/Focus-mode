@@ -36,10 +36,11 @@ const NAV = [
 
 const CLEAN_OPTIONS: Array<{ key: keyof CleanYouTubeOptions; label: string; hint: string }> = [
   { key: 'hideShorts', label: 'Hide Shorts', hint: 'Shelves, sidebar entry and tabs. Shorts links open in the normal player.' },
-  { key: 'hideHomeFeed', label: 'Hide home feed', hint: 'The homepage shows a search-first message instead of recommendations.' },
+  { key: 'hideHomeFeed', label: 'Hide home feed', hint: 'The homepage shows a small doodle reminder instead of recommendations.' },
   { key: 'hideSidebar', label: 'Hide recommendations', hint: 'Related videos beside the player and end-screen suggestions.' },
   { key: 'hideComments', label: 'Hide comments', hint: 'The comment section under videos.' },
   { key: 'hideAutoplay', label: 'Hide autoplay', hint: 'Autoplay toggle and "Up next" countdown, which is cancelled when shown.' },
+  { key: 'hideGuide', label: 'Simplify the left menu', hint: 'Keeps only Home. Subscriptions, You, History, Explore and the rest are hidden.' },
 ];
 
 function Section({

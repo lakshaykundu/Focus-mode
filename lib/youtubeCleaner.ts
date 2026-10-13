@@ -1,4 +1,5 @@
 import type { CleanYouTubeOptions } from '@/types/settings';
+import { buildHomeDoodleCss } from './homeDoodle';
 
 /**
  * Clean YouTube is pure CSS: a single stylesheet hides distracting areas, and because CSS
@@ -49,23 +50,26 @@ const SELECTORS = {
     '.ytp-autonav-endscreen-upnext-container',
     'ytd-compact-autoplay-renderer',
   ],
+  // Left menu: keep only the Home entry (it links to "/"). Covers the full menu, the collapsed
+  // mini menu and the hamburger drawer, which all use these elements.
+  hideGuide: [
+    'ytd-guide-section-renderer:not(:has(a[href="/"]))',
+    'ytd-guide-entry-renderer:not(:has(a[href="/"]))',
+    'ytd-guide-collapsible-entry-renderer',
+    'ytd-guide-collapsible-section-entry-renderer',
+    'ytd-guide-signin-promo-renderer',
+    'ytd-guide-renderer #footer',
+    'ytd-mini-guide-entry-renderer:not(:has(a[href="/"]))',
+  ],
 } as const satisfies Record<keyof CleanYouTubeOptions, readonly string[]>;
-
-const HOME_FEED_NOTE = `
-ytd-browse[page-subtype="home"]::before {
-  content: "Home feed hidden by FocusGuard. Search for what you came to learn.";
-  display: block;
-  margin: 48px auto 0;
-  max-width: 520px;
-  text-align: center;
-  font: 500 14px/1.5 Roboto, Arial, sans-serif;
-  color: var(--yt-spec-text-secondary, #aaa);
-}`;
 
 export const CLEAN_YOUTUBE_STYLE_ID = 'focusguard-clean-youtube';
 
-/** CSS for the enabled options, or an empty string if every option is off. */
-export function buildCleanYouTubeCss(options: CleanYouTubeOptions): string {
+/**
+ * CSS for the enabled options, or an empty string if every option is off. `date` picks the
+ * day's quip on the home-feed doodle.
+ */
+export function buildCleanYouTubeCss(options: CleanYouTubeOptions, date = new Date()): string {
   const blocks: string[] = [];
   for (const key of Object.keys(SELECTORS) as Array<keyof CleanYouTubeOptions>) {
     if (!options[key]) continue;
@@ -74,7 +78,7 @@ export function buildCleanYouTubeCss(options: CleanYouTubeOptions): string {
       blocks.push(`${selector} { display: none !important; }`);
     }
   }
-  if (options.hideHomeFeed) blocks.push(HOME_FEED_NOTE.trim());
+  if (options.hideHomeFeed) blocks.push(buildHomeDoodleCss(date));
   return blocks.join('\n');
 }
 
