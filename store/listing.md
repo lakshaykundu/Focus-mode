@@ -21,30 +21,28 @@ Upload: `.output/focusguard-1.0.0-chrome.zip` (create it with `npm run zip`).
 ```
 Stay on task without fighting your browser.
 
-FocusGuard blocks the sites that pull you away, like Instagram, Reddit, X, Netflix, Spotify and any site you add, for as long as your focus session runs. Pick 25, 45, 60 or 90 minutes, a custom length, or no time limit. When the timer ends, everything unblocks on its own.
+Choose the sites that distract you, start a session, and they stay blocked until the timer ends. Pick 25, 45, 60 or 90 minutes, a custom length, or no time limit. Social media, streaming and music come as ready-made categories, and you can add any site yourself.
 
-YOUTUBE, MINUS THE RABBIT HOLES
-Need YouTube for tutorials? Switch it to Clean mode instead of blocking it:
-• Shorts, the home feed and recommended videos disappear
-• The left menu is trimmed to just Home
-• Only videos in the categories you allow play (default: Education, Science & Technology, Howto & Style). Anything else is paused behind a friendly reminder, with one-click "Allow this video" or "Always allow this channel".
-• YouTube Music can be blocked separately
+LEARN ON YOUTUBE, SKIP THE RABBIT HOLES
+Switch YouTube to Clean mode instead of blocking it:
+• Shorts, the home feed and recommendations disappear, and the left menu is trimmed to Home
+• Only videos in categories you allow will play (by default Education, Science & Technology, and Howto & Style). Anything else is paused behind a friendly reminder with one-click "Allow this video" or "Always allow this channel".
 
-The filter uses the category each uploader chose on YouTube. It's a simple metadata check, not AI, and FocusGuard tells you exactly why a video was paused.
+The filter reads the category each uploader chose. It's a simple metadata check, not AI, and the reminder always says why a video was paused.
 
 STRICT MODE
-Make a commitment: during a strict session there's no End button, and sites can't be unblocked until the timer finishes. An emergency override is available behind a deliberate "type a phrase, then hold" step.
+Make a commitment: during a strict session there's no End button, and sites can't be unblocked until the timer finishes. An emergency override sits behind a deliberate "type a phrase, then hold" step.
 
 ALSO
-• Already-open distracting tabs are blocked the moment you start
-• Blocks a site and all of its subdomains, never look-alike domains
-• Keeps working while the popup is closed, and resumes correctly after a browser restart
-• Today's and lifetime focus time, plus a 14-day chart, counted from sessions you actually completed
+• Tabs already open on distracting pages are covered the moment you start
+• Matches a site and its subdomains, never look-alike domains
+• Keeps working with the popup closed, and resumes correctly after a browser restart
+• Today's and lifetime totals plus a 14-day chart, counted only from sessions you completed
 
 PRIVATE BY DESIGN
-No account, no servers, no analytics, no tracking. Your settings and statistics stay in your browser, and FocusGuard never sends your data anywhere.
+No account, no servers, no analytics, no tracking. Settings and statistics stay in your browser and are never sent anywhere.
 
-Note: FocusGuard works inside Chrome. It can't block desktop or phone apps, and Strict Mode is a commitment device, not a lock. The extension can still be disabled from chrome://extensions.
+Works inside Chrome only, so it can't stop desktop or phone apps. Strict Mode is a commitment device, not a lock: the extension can still be turned off from chrome://extensions.
 
 Open source: https://github.com/lakshaykundu/Focus-mode
 ```
